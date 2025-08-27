@@ -1,6 +1,7 @@
 
 const { app } = require('@azure/functions');
 const { getClient } = require('../dbClient');
+const {corsResponse} = require('../corsResponse');
 
 app.http('getGeneralInfo', {
     methods: ['GET'],
@@ -14,11 +15,11 @@ app.http('getGeneralInfo', {
 
         if (!userId) {
             context.log('user_id is missing in the request');
-            return {
+            return corsResponse({
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ success: false, message: 'user_id is required' })
-            };
+            });
         }
 
         try {
@@ -56,18 +57,18 @@ app.http('getGeneralInfo', {
 
             context.log("Database query executed successfully:", res.rows);
 
-            return {
+            return corsResponse({
                 status: 200,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(res.rows)
-            };
+            });
         } catch (error) {
             context.log.error("Error during database operation:", error);
-            return {
+            return corsResponse({
                 status: 500,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ success: false, message: `Database operation failed: ${error.message}` })
-            };
+            });
         }
     }
 });
