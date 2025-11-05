@@ -3,7 +3,7 @@ const getWebSocketConfig = () => {
   
   return {
     protocol: isDevelopment ? 'ws' : 'wss',
-    host: isDevelopment ? 'localhost' : 'yourapp.azurewebsites.net',
+    host: isDevelopment ? 'localhost' : 'witty-beach-062ca4b10.3.azurestaticapps.net',
     port: isDevelopment ? 8080 : null,
     path: '/ws'
   };
