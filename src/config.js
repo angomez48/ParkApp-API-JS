@@ -3,10 +3,12 @@ const getWebSocketConfig = () => {
   
   return {
     protocol: isDevelopment ? 'ws' : 'wss',
-    // Use api prefix for Azure Static Web Apps
-    host: isDevelopment ? 'localhost' : 'witty-beach-062ca4b10.3.azurestaticapps.net',
+    // Update to use the correct Azure Web App domain
+    host: isDevelopment ? 
+      'localhost' : 
+      'parkappwebsocket.azurewebsites.net',
     port: isDevelopment ? 8080 : null,
-    path: '/api/ws' 
+    path: '/ws'  // Remove /api prefix for Web App
   };
 };
 
