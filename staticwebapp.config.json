@@ -1,0 +1,17 @@
+{
+  "routes": [
+    {
+      "route": "/ws/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "networking": {
+    "allowedIpRanges": ["any"]
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  }
+}

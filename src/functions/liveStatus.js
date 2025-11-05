@@ -1,10 +1,16 @@
 const WebSocket = require('ws');
 const { startNotificationListener } = require('./statusListener');
+const { getWebSocketConfig } = require('../config');
 
-const PORT = process.env.WS_PORT || 8080;
-const wss = new WebSocket.Server({ port: PORT });
+const config = getWebSocketConfig();
+const PORT = process.env.WS_PORT || config.port;
 
-console.log(`WebSocket server started on ws://localhost:${PORT}`);
+const wss = new WebSocket.Server({ 
+  port: PORT,
+  path: config.path 
+});
+
+console.log(`WebSocket server started on ${config.protocol}://${config.host}${config.port ? ':' + config.port : ''}${config.path}`);
 
 function heartbeat() {
   this.isAlive = true;
