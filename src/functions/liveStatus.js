@@ -3,11 +3,9 @@ const { startNotificationListener } = require('./statusListener');
 const { getWebSocketConfig } = require('../config');
 
 const config = getWebSocketConfig();
-const PORT = process.env.WS_PORT || config.port;
-
 const wss = new WebSocket.Server({ 
-  port: PORT,
-  path: config.path 
+  port: config.port || 8080,
+  path: config.path
 });
 
 console.log(`WebSocket server started on ${config.protocol}://${config.host}${config.port ? ':' + config.port : ''}${config.path}`);
@@ -16,12 +14,16 @@ function heartbeat() {
   this.isAlive = true;
 }
 
-wss.on('connection', (ws) => {
-  console.log('Frontend connected to WebSocket');
+wss.on('connection', (ws, req) => {
+  console.log('New WebSocket connection from:', req.socket.remoteAddress);
   ws.isAlive = true;
   ws.on('pong', heartbeat);
 
   // Optionally, send a welcome message or initial data here
+
+  ws.on('error', (error) => {
+    console.error('WebSocket Client Error:', error);
+  });
 });
 
 // Heartbeat interval
@@ -38,6 +40,11 @@ const interval = setInterval(() => {
 
 wss.on('close', () => {
   clearInterval(interval);
+});
+
+// Add error handling
+wss.on('error', (error) => {
+  console.error('WebSocket Server Error:', error);
 });
 
 function broadcastToClients(payload) {

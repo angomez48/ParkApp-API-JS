@@ -1,17 +1,26 @@
 {
   "routes": [
     {
-      "route": "/ws/*",
+      "route": "/api/*",
       "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/ws",
+      "allowedRoles": ["anonymous"],
+      "methods": ["GET", "POST", "OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      }
     }
   ],
   "navigationFallback": {
     "rewrite": "/index.html"
   },
-  "networking": {
-    "allowedIpRanges": ["any"]
-  },
   "platform": {
     "apiRuntime": "node:18"
+  },
+  "networking": {
+    "allowedIpRanges": ["any"]
   }
 }
