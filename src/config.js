@@ -3,10 +3,10 @@ const getWebSocketConfig = () => {
   
   return {
     protocol: isDevelopment ? 'ws' : 'wss',
-    // Update to use the correct Azure Web App domain
+    // Update to use the exact Azure Web App hostname
     host: isDevelopment ? 
       'localhost' : 
-      'parkappwebsocket.azurewebsites.net',
+      'parkappwebsocket-g5c2hnhpbjg4f5an.canadacentral-01.azurewebsites.net',
     port: isDevelopment ? 8080 : null,
     path: '/ws'  // Remove /api prefix for Web App
   };
