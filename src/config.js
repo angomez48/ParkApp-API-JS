@@ -6,7 +6,7 @@ const getWebSocketConfig = () => {
     // Use api prefix for Azure Static Web Apps
     host: isDevelopment ? 'localhost' : 'witty-beach-062ca4b10.3.azurestaticapps.net',
     port: isDevelopment ? 8080 : null,
-    path: isDevelopment ? '/ws' : '/api/ws'  // Add /api prefix for production
+    path: '/api/ws' 
   };
 };
 

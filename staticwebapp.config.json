@@ -7,10 +7,12 @@
     {
       "route": "/api/ws",
       "allowedRoles": ["anonymous"],
-      "methods": ["GET", "POST", "OPTIONS"],
+      "methods": ["GET", "POST", "OPTIONS", "HEAD"],
       "headers": {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "*"
+        "Access-Control-Allow-Headers": "*",
+        "Upgrade": "*",
+        "Connection": "Upgrade"
       }
     }
   ],
