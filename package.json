@@ -7,9 +7,11 @@
     "dev": "func start"
   },
   "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@azure/identity": "^4.0.0",
     "express": "^4.18.2",
     "ws": "^8.14.2",
-    "pg": "^8.16.3"
+    "pg": "^8.11.3"
   },
   "main": "src/websocket-server.js"
 }
