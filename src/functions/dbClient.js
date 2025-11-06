@@ -46,23 +46,22 @@ function initPool() {
     }
 
     const config = {
-        host: process.env.DB_HOST || process.env.PGHOST,
-        database: process.env.DB_NAME || process.env.PGDATABASE,
-        user: process.env.DB_USER || process.env.PGUSER,
-        password: process.env.DB_PASSWORD || process.env.PGPASSWORD,
-        port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432'),
+        host: process.env.PGHOST,
+        database: process.env.PGDATABASE,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        port: parseInt(process.env.PGPORT || '5432'),
         ssl: {
             rejectUnauthorized: false
         },
-        // Reduced timeouts to fail fast
-        connectionTimeoutMillis: 10000, // 10 seconds
-        idleTimeoutMillis: 30000,      // 30 seconds
-        max: 10,                       // Maximum pool size
-        // Add statement timeout
-        statement_timeout: 10000,      // 10 seconds
-        query_timeout: 10000,          // 10 seconds
-        keepalive: true,              // Enable TCP keepalive
-        keepaliveInitialDelayMillis: 30000 // 30 seconds
+        // Connection settings
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
+        max: 10,
+        statement_timeout: 10000,
+        query_timeout: 10000,
+        keepalive: true,
+        keepaliveInitialDelayMillis: 30000
     };
 
     console.log("Initializing connection pool for host:", config.host);

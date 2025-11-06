@@ -1,7 +1,8 @@
-const { getClient } = require('./dbClient');
+const { getClient, releaseClient } = require('./dbClient');
 
 let client;
 let isConnecting = false;
+let reconnectTimeout;
 
 async function startNotificationListener(onMessage) {
     if (isConnecting) {
@@ -9,9 +10,20 @@ async function startNotificationListener(onMessage) {
         return;
     }
 
+    // Clear any existing reconnect timeout
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+    }
+
     isConnecting = true;
 
     try {
+        // Release existing client if any
+        if (client) {
+            await releaseClient(client);
+            client = null;
+        }
+
         client = await getClient();
         console.log('PostgreSQL client connected for LISTEN');
 
@@ -30,27 +42,42 @@ async function startNotificationListener(onMessage) {
 
         client.on('error', (err) => {
             console.error('PostgreSQL notification listener error:', err);
-            reconnect(onMessage);
+            handleDisconnect(onMessage);
         });
 
         client.on('end', () => {
             console.log('PostgreSQL connection ended');
-            reconnect(onMessage);
+            handleDisconnect(onMessage);
         });
 
     } catch (err) {
         console.error('Failed to set up notification listener:', err);
-        reconnect(onMessage);
+        handleDisconnect(onMessage);
     } finally {
         isConnecting = false;
     }
 }
 
-function reconnect(onMessage) {
+function handleDisconnect(onMessage) {
+    if (client) {
+        releaseClient(client);
+        client = null;
+    }
+
     console.log('Attempting to reconnect in 5 seconds...');
-    setTimeout(() => {
+    reconnectTimeout = setTimeout(() => {
         startNotificationListener(onMessage);
     }, 5000);
 }
+
+// Clean up on module unload
+process.on('beforeExit', () => {
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+    }
+    if (client) {
+        releaseClient(client);
+    }
+});
 
 module.exports = { startNotificationListener };
