@@ -30,7 +30,6 @@
  */
 
 const { Pool } = require('pg');
-const { DefaultAzureCredential } = require('@azure/identity');
 
 let pool;
 
@@ -42,43 +41,34 @@ let pool;
  * @return {Promise<Pool>} The initialized PostgreSQL connection pool.
  * @throws {Error} If a valid Azure Managed Identity token cannot be retrieved.
  */
-async function initPool() {
+function initPool() {
     if (pool) {
-        console.log("Reusing existing connection pool.");
+        console.log("Reusing existing connection pool");
         return pool;  // Reuse the existing pool if already created
     }
 
-    if (process.env.ENVIRONMENT === "local") {
-        console.log("Running locally. Using traditional user/password authentication.");
-        pool = new Pool({
-            host: process.env.PGHOST,
-            database: process.env.PGDATABASE,
-            port: process.env.PGPORT || 5432,
-            ssl: { rejectUnauthorized: false },
-            user: process.env.PGUSER,
-            password: process.env.PGPASSWORD
-        });
-    } else {
-        console.log("Running in Azure. Using token-based authentication with managed identity.");
-        const credential = new DefaultAzureCredential();
-        const tokenResponse = await credential.getToken("https://ossrdbms-aad.database.windows.net");
+    const config = {
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        port: process.env.DB_PORT || 5432,
+        ssl: { rejectUnauthorized: false },
+        // Connection pool settings
+        max: 20, // Maximum number of clients
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    };
 
-        if (!tokenResponse || typeof tokenResponse.token !== 'string') {
-            console.error("Failed to retrieve a valid token.");
-            throw new Error("Invalid token retrieved from Azure Managed Identity.");
-        }
+    pool = new Pool(config);
 
-        pool = new Pool({
-            host: process.env.PGHOST,
-            database: process.env.PGDATABASE,
-            port: process.env.PGPORT || 5432,
-            ssl: { rejectUnauthorized: false },
-            user: process.env.PGUSER,
-            password: tokenResponse.token
-        });
-    }
+    pool.on('error', (err) => {
+        console.error('Unexpected error on idle client', err);
+        // Try to reconnect
+        pool = null;
+    });
 
-    console.log("Connection pool initialized.");
+    console.log("New connection pool initialized");
     return pool;
 }
 
@@ -89,9 +79,15 @@ async function initPool() {
  * @return {Promise<import('pg').PoolClient>} A pooled PostgreSQL client.
  */
 async function getClient() {
-    const pool = await initPool();
-    console.log("Fetching a client from the pool.");
-    return pool.connect(); // Returns a pooled client
+    try {
+        const pool = initPool();
+        const client = await pool.connect();
+        console.log("New client connection established");
+        return client;
+    } catch (err) {
+        console.error("Error getting client:", err);
+        throw err;
+    }
 }
 
 module.exports = { getClient };
