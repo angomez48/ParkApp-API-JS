@@ -32,9 +32,12 @@
 const { Pool } = require('pg');
 
 let pool;
+let connectionAttempts = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 5000; // 5 seconds
 
 /**
- * Initializes and returns a singleton PostgreSQL connection pool
+ * Initializes and returns a singleton PostgreSQL connection pool with improved error handling
  */
 function initPool() {
     if (pool) {
@@ -42,7 +45,6 @@ function initPool() {
         return pool;
     }
 
-    // Use environment variables for connection
     const config = {
         host: process.env.DB_HOST || process.env.PGHOST,
         database: process.env.DB_NAME || process.env.PGDATABASE,
@@ -50,39 +52,83 @@ function initPool() {
         password: process.env.DB_PASSWORD || process.env.PGPASSWORD,
         port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432'),
         ssl: {
-            rejectUnauthorized: false // Required for Azure PostgreSQL
+            rejectUnauthorized: false
         },
-        // Connection pool settings
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        // Reduced timeouts to fail fast
+        connectionTimeoutMillis: 10000, // 10 seconds
+        idleTimeoutMillis: 30000,      // 30 seconds
+        max: 10,                       // Maximum pool size
+        // Add statement timeout
+        statement_timeout: 10000,      // 10 seconds
+        query_timeout: 10000,          // 10 seconds
+        keepalive: true,              // Enable TCP keepalive
+        keepaliveInitialDelayMillis: 30000 // 30 seconds
     };
 
-    console.log("Initializing connection pool with host:", config.host);
+    console.log("Initializing connection pool for host:", config.host);
     pool = new Pool(config);
 
+    // Handle pool errors
     pool.on('error', (err) => {
-        console.error('Unexpected error on idle client', err);
-        // Try to reconnect
+        console.error('Unexpected error on idle client:', err);
         pool = null;
+    });
+
+    // Handle pool connection events
+    pool.on('connect', () => {
+        console.log('New connection established to database');
+        connectionAttempts = 0; // Reset counter on successful connection
     });
 
     return pool;
 }
 
 /**
- * Gets a client from the connection pool
+ * Gets a client from the connection pool with retry logic
  */
 async function getClient() {
     try {
+        connectionAttempts++;
         const pool = initPool();
+        
+        console.log(`Attempting to get client (attempt ${connectionAttempts} of ${MAX_RETRIES})`);
+        
         const client = await pool.connect();
-        console.log("New client connection established");
+        
+        // Add error handler to client
+        client.on('error', (err) => {
+            console.error('Client error:', err);
+            client.release(true); // Force release with error
+        });
+
         return client;
     } catch (err) {
         console.error("Error getting client:", err);
-        throw err;
+
+        // Destroy pool on connection error
+        if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+            pool = null;
+        }
+
+        if (connectionAttempts < MAX_RETRIES) {
+            console.log(`Retrying in ${RETRY_DELAY/1000} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return getClient(); // Recursive retry
+        }
+
+        // Reset attempts counter after max retries
+        connectionAttempts = 0;
+        throw new Error(`Failed to connect after ${MAX_RETRIES} attempts: ${err.message}`);
     }
 }
 
-module.exports = { getClient };
+/**
+ * Releases a client back to the pool
+ */
+function releaseClient(client) {
+    if (client) {
+        client.release(true); // Force release
+    }
+}
+
+module.exports = { getClient, releaseClient };
