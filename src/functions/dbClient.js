@@ -34,32 +34,31 @@ const { Pool } = require('pg');
 let pool;
 
 /**
- * Initializes and returns a singleton PostgreSQL connection pool.
- * Determines the environment (local or Azure) and configures the pool accordingly.
- * For local, uses user/password authentication; for Azure, uses Managed Identity token.
- * @since 1.0.0
- * @return {Promise<Pool>} The initialized PostgreSQL connection pool.
- * @throws {Error} If a valid Azure Managed Identity token cannot be retrieved.
+ * Initializes and returns a singleton PostgreSQL connection pool
  */
 function initPool() {
     if (pool) {
         console.log("Reusing existing connection pool");
-        return pool;  // Reuse the existing pool if already created
+        return pool;
     }
 
+    // Use environment variables for connection
     const config = {
-        host: process.env.DB_HOST,
-        database: process.env.DB_NAME,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT || 5432,
-        ssl: { rejectUnauthorized: false },
+        host: process.env.DB_HOST || process.env.PGHOST,
+        database: process.env.DB_NAME || process.env.PGDATABASE,
+        user: process.env.DB_USER || process.env.PGUSER,
+        password: process.env.DB_PASSWORD || process.env.PGPASSWORD,
+        port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432'),
+        ssl: {
+            rejectUnauthorized: false // Required for Azure PostgreSQL
+        },
         // Connection pool settings
-        max: 20, // Maximum number of clients
+        max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
     };
 
+    console.log("Initializing connection pool with host:", config.host);
     pool = new Pool(config);
 
     pool.on('error', (err) => {
@@ -68,15 +67,11 @@ function initPool() {
         pool = null;
     });
 
-    console.log("New connection pool initialized");
     return pool;
 }
 
 /**
- * Fetches a PostgreSQL client from the connection pool for executing queries.
- * Ensures the pool is initialized before returning a client.
- * @since 1.0.0
- * @return {Promise<import('pg').PoolClient>} A pooled PostgreSQL client.
+ * Gets a client from the connection pool
  */
 async function getClient() {
     try {
