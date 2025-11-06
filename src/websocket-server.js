@@ -10,7 +10,20 @@ const wss = new WebSocket.Server({
     path: '/ws'
 });
 
-// Connection handling
+// Broadcast function
+const broadcast = (payload) => {
+    console.log('Broadcasting to clients:', payload);
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(payload));
+        }
+    });
+};
+
+// Start notification listener when WebSocket server starts
+startNotificationListener(broadcast);
+
+// WebSocket connection handling
 wss.on('connection', (ws) => {
     console.log('New client connected');
     
@@ -32,18 +45,6 @@ wss.on('connection', (ws) => {
         console.log('Client disconnected');
     });
 });
-
-// Broadcast function
-const broadcast = (payload) => {
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(payload));
-        }
-    });
-};
-
-// Start notification listener
-startNotificationListener(broadcast);
 
 const port = process.env.PORT || 8080;
 server.listen(port, () => {
