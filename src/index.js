@@ -29,3 +29,5 @@ require('./functions/dbFetchers/info');
 
 require('./functions/dbFetchers/getKonvaInfo');
 require('./functions/dbFetchers/getMapInfo');
+
+require('./functions/dbFetchers/getUsers');
