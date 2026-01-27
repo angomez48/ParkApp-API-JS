@@ -2,7 +2,7 @@ const { app } = require('@azure/functions');
 const { getClient } = require('../dbClient');
 const { corsResponse } = require('../corsResponse');
 
-// Endpoint to fetch all users with client_alias (for dev team)
+// A ver si as
 app.http('getUsers', {
 	methods: ['GET'],
 	authLevel: 'anonymous',
